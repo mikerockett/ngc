@@ -1,4 +1,4 @@
-module ngc_helpers
+module helpers
 
 import term
 import os { input }
