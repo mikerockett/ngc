@@ -1,7 +1,8 @@
 import term
 import cli { Command, Flag }
-import os { new_process, getpid, input, exists_in_system_path, exec }
-import endeveit.validate.validators { is_email, is_fqdn }
+import os { exists_in_system_path, exec }
+import endeveit.validate.validators { is_fqdn }
+import ngc_helpers { confirm, ask }
 
 fn main() {
 	term.clear()
@@ -38,58 +39,12 @@ fn preflight() {
 	println(term.bright_green('✔ Preflight checks complete.'))
 }
 
-type StringValidationCallback = fn (input string) bool
-
 struct DomainConfig {
 	domain      string [required]
 	skip_dns    bool   [required]
 	www_server  bool   [required]
 	public_root string [required]
 	index       string [required]
-}
-
-struct ConfirmationPrompt {
-	message string [required]
-	default bool
-}
-
-fn valid_string_prompt(input string) bool {
-	return true
-}
-
-struct StringPrompt {
-	message   string                   [required]
-	default   string
-	required  bool
-	validator StringValidationCallback = valid_string_prompt
-}
-
-fn confirm(prompt ConfirmationPrompt) bool {
-	default_str := if prompt.default { 'yes' } else { 'no' }
-	input := input(term.bright_green('? ') + prompt.message + term.dim(' [y/n] ') + term.dim('$default_str '))
-	return match input {
-		'yes', 'Y', 'y' { true }
-		'no', 'N', 'n' { false }
-		else { input.bool() }
-	}
-}
-
-fn ask(prompt StringPrompt) string {
-	default_str := if prompt.default == '' { 'required' } else { prompt.default }
-	input := input(term.bright_green('? ') + prompt.message + term.dim(' $default_str '))
-	if prompt.required && input == '' {
-		eprintln(term.red('  Input is required'))
-		return ask(prompt)
-	}
-	if prompt.validator(input) == false {
-		eprintln(term.red('  Input is invalid'))
-		return ask(prompt)
-	}
-	return if input.len > 0 {
-		input
-	} else {
-		prompt.default
-	}
 }
 
 fn add_domain(command Command) {
