@@ -1,7 +1,7 @@
 module helpers
 
 import term
-import os { input }
+import os
 
 fn valid_string_prompt(input string) bool {
 	return true
@@ -18,7 +18,7 @@ pub struct StringPrompt {
 
 pub fn ask(prompt StringPrompt) string {
 	default_str := if prompt.default == '' { 'required' } else { prompt.default }
-	input := input(term.bright_green('? ') + prompt.message + term.dim(' $default_str '))
+	input := os.input(term.yellow('? ') + prompt.message + term.dim(' $default_str '))
 	if prompt.required && input == '' {
 		eprintln(term.red('  Input is required'))
 		return ask(prompt)
