@@ -25,7 +25,7 @@ pub fn ensure_dependencies_are_installed() {
 	}
 	term.cursor_up(1)
 	term.erase_line_clear()
-	println(term.ok_message('⊙ dependencies are installed'))
+	println(term.bright_green('⊙ dependencies are installed'))
 }
 
 pub fn ensure_dependencies_can_run() {
@@ -36,7 +36,7 @@ pub fn ensure_dependencies_can_run() {
 	}
 	term.cursor_up(1)
 	term.erase_line_clear()
-	println(term.ok_message('⊙ dependencies can run'))
+	println(term.bright_green('⊙ dependencies can run'))
 }
 
 pub fn yes_no(condition bool) string {

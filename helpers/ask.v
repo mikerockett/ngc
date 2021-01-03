@@ -3,11 +3,11 @@ module helpers
 import term
 import os
 
-fn valid_string_prompt(input string) bool {
-	return true
+fn valid_string_prompt(input string) (bool, string) {
+	return true, ''
 }
 
-type StringValidationCallback = fn (input string) bool
+type StringValidationCallback = fn (input string) (bool, string)
 
 pub struct StringPrompt {
 	message   string                   [required]
@@ -23,13 +23,12 @@ pub fn ask(prompt StringPrompt) string {
 		eprintln(term.red('  Input is required'))
 		return ask(prompt)
 	}
-	if prompt.validator(input) == false {
-		eprintln(term.red('  Input is invalid'))
+	mut output := if input.len > 0 { input } else { prompt.default }
+	output = output.trim_space()
+	valid, err := prompt.validator(output)
+	if !valid {
+		eprintln(term.red('  Input is invalid: $err'))
 		return ask(prompt)
 	}
-	return if input.len > 0 {
-		input
-	} else {
-		prompt.default
-	}
+	return output
 }
