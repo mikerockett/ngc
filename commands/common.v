@@ -10,7 +10,7 @@ pub fn welcome(command Command) {
 }
 
 pub fn preflight() {
-	println(term.bright_blue('▶ running preflight checks'))
+	println(term.bright_blue('→ running preflight checks'))
 	ensure_dependencies_are_installed()
 	ensure_dependencies_can_run()
 	println(term.ok_message('✔ preflight checks complete'))
@@ -31,7 +31,10 @@ pub fn ensure_dependencies_are_installed() {
 pub fn ensure_dependencies_can_run() {
 	println(term.dim('⊙ ensuring dependencies can run'))
 	for command in ['nginx -version', 'certbot --version', 'dig -v'] {
-		result := os.exec(command) or { panic('Unable to run dependency: $command') }
+		result := os.exec(command) or {
+			eprintln('Unable to run dependency: $command')
+			return
+		}
 		assert result.exit_code == 0
 	}
 	term.cursor_up(1)

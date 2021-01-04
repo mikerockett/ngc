@@ -29,6 +29,7 @@ pub mut:
 }
 
 pub fn (mut this AddDomainFlow) acquire_domain_config() {
+	current_shell_result := os.exec(r'echo $SHELL') or { os.Result{0, '/usr/bin/bash'} }
 	this.domain = Domain{
 		name: ask(
 			message: 'user and domain name'
@@ -40,35 +41,40 @@ pub fn (mut this AddDomainFlow) acquire_domain_config() {
 		skip_dns: confirm(message: 'skip dns and certbot?', default: false)
 		www_server: confirm(message: 'add a www. server with redirect?', default: false)
 		public_root: ask(
-			message: 'public root directory (public, dist, or web)'
+			message: 'public root directory ${['public', 'dist', 'web'].join(', ')}'
 			default: 'public'
 			validator: fn (input string) (bool, string) {
 				valids := ['public', 'dist', 'web']
-				return input in valids, 'Must be one of $valids'
+				return input in valids, 'Must be one of ${valids.join(', ')}'
 			}
 		)
 		index: ask(message: 'index filename', default: 'index.php')
-		shell: ask(message: 'default user shell', default: '/usr/bin/bash')
+		shell: ask(message: 'default user shell', default: current_shell_result.output.trim_space())
 	}
 }
 
 pub fn (mut this AddDomainFlow) check_domain_dns() {
+	println(term.bright_blue('→ checking domain dns…'))
 	result := os.exec('dig $this.domain.name +short') or {
-		panic('Unable to do a DNS lookup for $this.domain.name – are you connected?')
+		eprintln(term.red('Unable to do a DNS lookup for $this.domain.name – are you connected?'))
+		return
 	}
 	this.domain_dns = result.output.trim_space()
 }
 
 pub fn (mut this AddDomainFlow) check_server_dns() {
+	println(term.bright_blue('→ checking server dns…'))
 	result := http.get('https://icanhazip.com/') or {
-		panic('Unable to do a DNS lookup for the server – are you connected?')
+		eprintln(term.red('Unable to do a DNS lookup for the server – are you connected?'))
+		return
 	}
 	this.server_dns = result.text.trim_space()
 }
 
 fn get_nginx_configuration_file() string {
 	result := os.exec(r"nginx -V 2>&1 | grep -o '\-\-conf-path=\(.*conf\)' | cut -d '=' -f2") or {
-		panic('Unable to obtain nginx configuration path')
+		eprintln(term.red('Unable to obtain nginx configuration path'))
+		exit(1)
 	}
 	config_file := os.real_path(result.output.trim_space())
 	if !os.is_file(config_file) {
@@ -110,11 +116,26 @@ pub fn (mut this AddDomainFlow) confirm() {
 	println('— nginx server config file path: ' + term.dim(this.nginx_server_configuration_file))
 	println('— nginx log file base path: ' + term.dim(this.nginx_log_file_base_path))
 	println('— try files mode: ' + term.dim(this.nginx_try_files_mode))
-	if !confirm(
+	proceed := confirm(
 		message: term.bright_green('happy with all of the above and proceed?')
 		default: true
-	) {
+	)
+	if !proceed {
 		println(term.yellow('◂ Bye…'))
 		exit(0)
 	}
+}
+
+pub fn (mut this AddDomainFlow) create_user() {
+	user_exists := os.exec('id -u $this.domain.name') or { panic('Unable to id user') }
+	if user_exists.exit_code == 0 {
+		println(term.yellow('→ user $this.domain.name already exists'))
+		return
+	}
+	println(term.bright_green('→ user $this.domain.name does not exist, creating…'))
+	result := os.exec('useradd -m $this.domain.name -s $this.domain.shell') or {
+		eprintln(term.red(err))
+		exit(1)
+	}
+	println(result)
 }
