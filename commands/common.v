@@ -2,11 +2,15 @@ module commands
 
 import term
 import os
+import lol as Lol
 import cli { Command }
 
 pub fn welcome(command Command) {
-	title := ' nginx configurator: $command.name \n'
-	println(term.green(term.inverse(title)))
+	lol := Lol.Lol{Lol.Config{Lol.Style.normal}}
+	title := 'nginx configurator: $command.description'
+	lol.print('-'.repeat(title.len))
+	lol.print(title)
+	lol.print('-'.repeat(title.len))
 	preflight()
 }
 

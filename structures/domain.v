@@ -106,7 +106,7 @@ pub fn (mut this AddDomainFlow) confirm() {
 				println('✔ domain points to server')
 			}
 			false {
-				println(term.red('⨉ domain doesn’t point to server – will skip certbot'))
+				println(term.red('⨉ domain doesn’t point to server, will skip certbot'))
 				this.skip_certbot = true
 			}
 		}

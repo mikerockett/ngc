@@ -7,7 +7,7 @@ import term
 pub fn add() Command {
 	return Command{
 		name: 'add'
-		description: 'Configures a new user and domain.'
+		description: 'add a new user and nginx server'
 		pre_execute: welcome
 		execute: add_domain
 	}
