@@ -5,7 +5,8 @@ import os
 import cli { Command }
 
 pub fn welcome(command Command) {
-	println(term.green(term.bold('Nginx Configurator: ' + command.name)))
+	title := ' nginx configurator: $command.name \n'
+	println(term.green(term.inverse(title)))
 	preflight()
 }
 

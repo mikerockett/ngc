@@ -10,7 +10,7 @@ pub struct ConfirmationPrompt {
 
 pub fn confirm(prompt ConfirmationPrompt) bool {
 	default_str := if prompt.default { 'yes' } else { 'no' }
-	input := os.input(term.yellow('? ') + prompt.message + term.dim(' [y/n] ') + term.dim('$default_str ')).trim_space().to_lower()
+	input := os.input(term.yellow('? ') + prompt.message + term.bright_green(' [y/n] ') + term.dim('$default_str ')).trim_space().to_lower()
 	if input.len == 0 {
 		return prompt.default
 	}

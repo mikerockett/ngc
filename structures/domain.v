@@ -99,8 +99,8 @@ pub fn (mut this AddDomainFlow) configure() {
 pub fn (mut this AddDomainFlow) confirm() {
 	println(term.green('configurator has everything it needs to add a new domain,\nand just needs your confirmation on some other info it gathered:'))
 	if !this.domain.skip_dns {
-		println('— server dns: ' + term.dim(this.server_dns))
-		println('— domain dns: ' + term.dim(this.domain_dns))
+		println('• server dns: ${term.dim(this.server_dns)}')
+		println('• domain dns: ${term.dim(this.domain_dns)}')
 		match this.server_dns == this.domain_dns {
 			true {
 				println('✔ domain points to server')
@@ -111,11 +111,11 @@ pub fn (mut this AddDomainFlow) confirm() {
 			}
 		}
 	}
-	println('— user home directory: ' + term.dim(this.home_directory))
-	println('— nginx config file path: ' + term.dim(this.nginx_configuration_file))
-	println('— nginx server config file path: ' + term.dim(this.nginx_server_configuration_file))
-	println('— nginx log file base path: ' + term.dim(this.nginx_log_file_base_path))
-	println('— try files mode: ' + term.dim(this.nginx_try_files_mode))
+	println('• user home directory: ${term.dim(this.home_directory)}')
+	println('• nginx config file path: ${term.dim(this.nginx_configuration_file)}')
+	println('• nginx server config file path: ${term.dim(this.nginx_server_configuration_file)}')
+	println('• nginx log file base path: ${term.dim(this.nginx_log_file_base_path)}')
+	println('• try files mode: ${term.dim(this.nginx_try_files_mode)}')
 	proceed := confirm(
 		message: term.bright_green('happy with all of the above and proceed?')
 		default: true
