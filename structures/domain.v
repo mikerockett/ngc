@@ -121,7 +121,7 @@ pub fn (mut this AddDomainFlow) confirm() {
 		default: true
 	)
 	if !proceed {
-		println(term.yellow('◂ Bye…'))
+		println(term.yellow('△ cancelled'))
 		exit(0)
 	}
 }
