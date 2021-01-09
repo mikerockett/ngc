@@ -1,6 +1,7 @@
 import os { args }
 import cli { Command }
 import commands { add }
+import nginx { Directive }
 
 fn main() {
 	mut app := Command{

@@ -20,9 +20,10 @@ fn add_domain(command Command) {
 		flow.check_domain_dns()
 		flow.check_server_dns()
 	} else {
-		println(term.yellow(term.bold('You have chosen to ignore DNS related tasks. As such, there will be no domain verification, and certbot will not be run.')))
+		println(term.yellow(term.bold('you have chosen to ignore dns-related tasks - domain verification and certbot will be skipped.')))
 	}
 	flow.configure()
 	flow.confirm()
-	flow.create_user()
+	// flow.create_user()
+	flow.create_nginx_configuration()
 }
