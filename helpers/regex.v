@@ -9,7 +9,8 @@ pub fn regex_valid(re_query string) bool {
 
 pub fn regex_match(val string, re_query string) bool {
 	if !regex_valid(re_query) {
-		panic('Regex $re_query is invalid.')
+		eprintln('Regex $re_query is invalid.')
+		exit(1)
 	}
 	mut re := regex.regex_opt(re_query) or { return false }
 	start, _ := re.match_string(val)

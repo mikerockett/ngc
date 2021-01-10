@@ -133,7 +133,9 @@ pub fn (mut this AddDomainFlow) confirm() {
 
 pub fn (mut this AddDomainFlow) create_user() {
 	user_exists := os.exec('id -u $this.domain.name') or {
-		panic('unable to id user $this.domain.name')
+		eprintln(term.red('unable to id user $this.domain.name'))
+		eprintln(err)
+		exit(1)
 	}
 	if user_exists.exit_code == 0 {
 		println(term.yellow('→ user $this.domain.name already exists'))
