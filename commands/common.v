@@ -1,8 +1,8 @@
 module commands
 
+import cli { Command }
 import term
 import os
-import cli { Command }
 
 pub fn welcome(command Command) {
 	term.clear()
@@ -25,7 +25,7 @@ pub fn preflight() {
 pub fn ensure_supported_user_os() {
 	println(term.dim('- ensuring os supported'))
 	os := os.user_os()
-	if os.trim_space() !in ['linux', 'macos'] {
+	if os.trim_space() !in ['linux', 'macos'] { // macos is temporary
 		eprintln(term.red('⨉ $os is not supported'))
 		exit(1)
 	}
@@ -40,7 +40,7 @@ pub fn ensure_running_as_root() {
 		eprintln(term.red('unable to get user id'))
 		exit(1)
 	}
-	if result.output.trim_space() !in ['0', '501'] {
+	if result.output.trim_space() !in ['0', '501'] { // 501 is temporary
 		eprintln(term.red('⨉ must be running as root, quitting'))
 		exit(1)
 	}
