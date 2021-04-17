@@ -30,7 +30,10 @@ pub mut:
 }
 
 pub fn (mut this AddDomainFlow) acquire_domain_config() {
-	current_shell_result := os.exec(r'echo $SHELL') or { os.Result{0, '/usr/bin/bash'} }
+	mut current_shell_result := os.execute(r'echo $SHELL')
+	if current_shell_result.exit_code != 0 {
+		current_shell_result = os.Result{0, '/usr/bin/bash'}
+	}
 	this.domain = Domain{
 		name: ask(
 			message: 'user and domain name'
@@ -56,7 +59,8 @@ pub fn (mut this AddDomainFlow) acquire_domain_config() {
 
 pub fn (mut this AddDomainFlow) check_domain_dns() {
 	println(term.bright_blue('→ checking domain dns…'))
-	result := os.exec('dig $this.domain.name +short') or {
+	result := os.execute('dig $this.domain.name +short')
+	if result.exit_code != 0 {
 		eprintln(term.red('unable to do a dns lookup for $this.domain.name – are you connected?'))
 		exit(1)
 	}
@@ -77,7 +81,8 @@ pub fn (mut this AddDomainFlow) check_server_dns() {
 }
 
 fn get_nginx_configuration_file() string {
-	result := os.exec(r"nginx -V 2>&1 | grep -o '\-\-conf-path=\(.*conf\)' | cut -d '=' -f2") or {
+	result := os.execute(r"nginx -V 2>&1 | grep -o '\-\-conf-path=\(.*conf\)' | cut -d '=' -f2")
+	if result.exit_code != 0 {
 		eprintln(term.red('unable to obtain nginx configuration path'))
 		exit(1)
 	}
@@ -116,11 +121,11 @@ pub fn (mut this AddDomainFlow) confirm() {
 			}
 		}
 	}
-	println('- user home directory: ${term.dim(this.home_directory)}')
-	println('- nginx config file path: ${term.dim(this.nginx_configuration_file)}')
-	println('- nginx server config file path: ${term.dim(this.nginx_server_configuration_file)}')
-	println('- nginx log file base path: ${term.dim(this.nginx_log_file_base_path)}')
-	println('- try files mode: ${term.dim(this.nginx_try_files_mode)}')
+	println('+ user home directory: ${term.dim(this.home_directory)}')
+	println('+ nginx config file path: ${term.dim(this.nginx_configuration_file)}')
+	println('+ nginx server config file path: ${term.dim(this.nginx_server_configuration_file)}')
+	println('+ nginx log file base path: ${term.dim(this.nginx_log_file_base_path)}')
+	println('+ try files mode: ${term.dim(this.nginx_try_files_mode)}')
 	proceed := confirm(
 		message: term.bright_green('happy with all of the above and proceed?')
 		default: true
@@ -132,31 +137,37 @@ pub fn (mut this AddDomainFlow) confirm() {
 }
 
 pub fn (mut this AddDomainFlow) create_user() {
-	user_exists := os.exec('id -u $this.domain.name') or {
-		eprintln(term.red('unable to id user $this.domain.name'))
-		eprintln(err)
-		exit(1)
-	}
-	if user_exists.exit_code == 0 {
+	user_exists_result := os.execute('id -u $this.domain.name')
+	if user_exists_result.exit_code == 0 {
 		println(term.yellow('→ user $this.domain.name already exists'))
 		return
 	}
 	println(term.bright_green('→ user $this.domain.name does not exist, creating…'))
-	result := os.exec('useradd -m $this.domain.name -s $this.domain.shell') or {
-		eprintln(term.red(err))
+	result := os.execute('useradd -m $this.domain.name -s $this.domain.shell')
+	if result.exit_code != 0 {
+		eprintln(term.red('unable to create user.'))
 		exit(1)
 	}
 	println(result)
 }
 
 const (
-	csp        = '"default-src \'self\' http: https: data: blob: \'unsafe-inline\'"'
 	gzip_types = ['text/plain', 'text/css', 'text/xml', 'application/json', 'application/javascript',
 		'application/rss+xml', 'application/atom+xml', 'image/svg+xml']
 )
 
 pub fn (mut this AddDomainFlow) create_nginx_configuration() {
 	filename := this.nginx_server_configuration_file
+	mut conf := Directive{}
+	println(term.dim('- preparing main server'))
+	conf.block(this.nginx_main_server())
+	if this.domain.www_server {
+		println(term.dim('- preparing www server'))
+		conf.block(this.nginx_www_server())
+	}
+	println(term.dim('- compiling'))
+	compiled := conf.compile(1)
+	println(compiled)
 	if os.is_file(filename) {
 		println(term.yellow('$filename exists, removing…'))
 		os.rm(filename) or {
@@ -170,17 +181,12 @@ pub fn (mut this AddDomainFlow) create_nginx_configuration() {
 		eprintln(err)
 		exit(1)
 	}
-	mut conf := Directive{}
-	println(term.dim('- preparing main server'))
-	conf.block(this.nginx_main_server())
-	if this.domain.www_server {
-		println(term.dim('- preparing www server'))
-		conf.block(this.nginx_www_server())
-	}
-	println(term.dim('- compiling'))
-	compiled := conf.compile(1)
 	println(term.dim('- writing file'))
-	file.write_str(compiled)
+	file.write_string(compiled) or {
+		eprintln(term.red('unable to create config'))
+		file.close()
+		exit(1)
+	}
 	file.close()
 	println(term.green('✔ nginx config written to file'))
 }
@@ -189,25 +195,26 @@ pub fn (this AddDomainFlow) nginx_main_server() Directive {
 	mut server := Directive{
 		name: 'server'
 	}
-	server.instruction('listen', ['80'])
-	server.instruction('listen', ['[::]:80'])
-	server.instruction('server_name', [this.domain.name])
-	server.instruction('root', [os.join_path(this.home_directory, 'www', this.domain.public_root)])
-	server.instruction('index', [this.domain.index])
-	server.instruction('error_page', ['404', '/$this.domain.index'])
-	server.instruction('charset', ['utf-8'])
-	server.instruction('access_log', ['$this.nginx_log_file_base_path/access.log'])
-	server.instruction('error_log', ['$this.nginx_log_file_base_path/error.log'])
-	server.instruction('add_header', ['X-Frame-Options', '"SAMEORIGIN"', 'always'])
-	server.instruction('add_header', ['X-XSS-Protection', '"1; mode=block"', 'always'])
-	server.instruction('add_header', ['X-Content-Type-Options', '"nosniff"', 'always'])
-	server.instruction('add_header', ['Referrer-Policy', '"no-referrer-when-downgrade"', 'always'])
-	server.instruction('add_header', ['Content-Security-Policy', csp, 'always'])
-	server.instruction('gzip', ['on'])
-	server.instruction('gzip_vary', ['on'])
-	server.instruction('gzip_proxied', ['any'])
-	server.instruction('gzip_comp_level', ['6'])
-	server.instruction('gzip_types', gzip_types)
+	server.listen('80')
+	server.listen('[::]:80')
+	server.server_name(this.domain.name)
+	server.root(os.join_path(this.home_directory, 'www', this.domain.public_root))
+	server.index(this.domain.index)
+	server.error_page('404', '/$this.domain.index')
+	server.charset('utf-8')
+	server.access_log(os.join_path(this.nginx_log_file_base_path, 'access.log'))
+	server.error_log(os.join_path(this.nginx_log_file_base_path, 'error.log'))
+	server.always_add_header('X-Frame-Options', '"SAMEORIGIN"')
+	server.always_add_header('X-XSS-Protection', '"1; mode=block"')
+	server.always_add_header('X-Content-Type-Options', '"nosniff"')
+	server.always_add_header('Referrer-Policy', '"no-referrer-when-downgrade"')
+	server.always_add_header('Content-Security-Policy', '"default-src \'self\' http: https: data: blob: \'unsafe-inline\'"')
+	server.always_add_header('Permissions-Policy', 'interest-cohort=()')
+	server.gzip('on')
+	server.gzip_vary('on')
+	server.gzip_proxied('any')
+	server.gzip_comp_level('6')
+	server.gzip_types(...gzip_types)
 	server.block(this.nginx_main_location())
 	server.block(this.nginx_exclusion_location())
 	server.block(this.nginx_well_known_location())
@@ -223,8 +230,8 @@ pub fn (this AddDomainFlow) nginx_www_server() Directive {
 	mut server := Directive{
 		name: 'server'
 	}
-	server.instruction('server_name', ['www.$this.domain.name'])
-	server.instruction('return', ['301', '\$scheme://$this.domain.name' + '\$request_uri'])
+	server.server_name('www.$this.domain.name')
+	server.return_with_status('301', '\$scheme://$this.domain.name' + '\$request_uri')
 	return server
 }
 
@@ -233,7 +240,7 @@ pub fn (this AddDomainFlow) nginx_main_location() Directive {
 		name: 'location'
 		arguments: ['/']
 	}
-	main_location.instruction('try_files', ['\$uri', '\$uri/', '/$this.nginx_try_files_mode'])
+	main_location.try_files('\$uri', '\$uri/', '/$this.nginx_try_files_mode')
 	return main_location
 }
 
@@ -242,8 +249,8 @@ pub fn (this AddDomainFlow) nginx_exclusion_location() Directive {
 		name: 'location'
 		arguments: ['~', '/(favicon\.ico|robots\.txt)']
 	}
-	location.instruction('access_log', ['off'])
-	location.instruction('log_not_found', ['off'])
+	location.access_log('off')
+	location.log_not_found('off')
 	return location
 }
 
@@ -252,7 +259,7 @@ pub fn (this AddDomainFlow) nginx_well_known_location() Directive {
 		name: 'location'
 		arguments: ['~', '/\\.(?!well-known).*']
 	}
-	location.instruction('deny', ['all'])
+	location.deny('all')
 	return location
 }
 
@@ -261,8 +268,8 @@ pub fn (this AddDomainFlow) nginx_files_a_location() Directive {
 		name: 'location'
 		arguments: ['~*', '.(?:css(.map)?|js(.map)?|jpe?g|png|gif|ico|cur|heic|webp|tiff?|mp3|m4a|aac|ogg|midi?|wav|mp4|mov|webm|mpe?g|avi|ogv|flv|wmv)$']
 	}
-	location.instruction('expires', ['7d'])
-	location.instruction('access_log', ['off'])
+	location.expires('7d')
+	location.access_log('off')
 	return location
 }
 
@@ -271,9 +278,9 @@ pub fn (this AddDomainFlow) nginx_files_b_location() Directive {
 		name: 'location'
 		arguments: ['~*', '.(?:svgz?|ttf|ttc|otf|eot|woff2?)$']
 	}
-	location.instruction('add_header', ['Access-Control-Allow-Origin', '"*"'])
-	location.instruction('expires', ['7d'])
-	location.instruction('access_log', ['off'])
+	location.add_header('Access-Control-Allow-Origin', '"*"')
+	location.expires('7d')
+	location.access_log('off')
 	return location
 }
 
@@ -282,12 +289,12 @@ pub fn (this AddDomainFlow) nginx_php_location() Directive {
 		name: 'location'
 		arguments: ['~', '.php$']
 	}
-	location.instruction('include', ['fastcgi_params'])
-	location.instruction('fastcgi_pass', ['unix:/var/run/php/php-fpm.sock'])
-	location.instruction('fastcgi_index', [this.domain.index])
-	location.instruction('fastcgi_buffers', ['8', '16k'])
-	location.instruction('fastcgi_buffer_size', ['32k'])
-	location.instruction('fastcgi_param', ['DOCUMENT_ROOT', '\$realpath_root'])
-	location.instruction('fastcgi_param', ['SCRIPT_FILENAME', '\$realpath_root\$fastcgi_script_name'])
+	location.instruction('include', 'fastcgi_params')
+	location.instruction('fastcgi_pass', 'unix:/var/run/php/php-fpm.sock')
+	location.instruction('fastcgi_index', this.domain.index)
+	location.instruction('fastcgi_buffers', '8', '16k')
+	location.instruction('fastcgi_buffer_size', '32k')
+	location.instruction('fastcgi_param', 'DOCUMENT_ROOT', '\$realpath_root')
+	location.instruction('fastcgi_param', 'SCRIPT_FILENAME', '\$realpath_root\$fastcgi_script_name')
 	return location
 }
