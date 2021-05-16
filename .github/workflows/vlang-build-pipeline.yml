@@ -20,3 +20,11 @@ jobs:
         id: v
       - name: Build repository app
         run: v -prod ngc.v -o ngc -os linux
+      - uses: "marvinpinto/action-automatic-releases@latest"
+        with:
+          repo_token: "${{ secrets.GITHUB_TOKEN }}"
+          automatic_release_tag: "latest"
+          prerelease: true
+          title: "Production Build for Linux"
+          files: |
+            ngc
