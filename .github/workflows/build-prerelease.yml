@@ -7,7 +7,7 @@ on:
 
 jobs:
   run:
-    name: Build and Release
+    name: Pre-Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout

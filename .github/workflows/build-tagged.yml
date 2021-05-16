@@ -1,13 +1,13 @@
-name: build-main
+name: build-tagged
 
 on:
   push:
-    branches:
-      - main
+    tags:
+      - "v*"
 
 jobs:
   run:
-    name: Build and Release
+    name: Tagged Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -24,6 +24,6 @@ jobs:
         with:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           prerelease: false
-          title: "Main Build for Linux"
+          title: "Production Build for Linux"
           files: |
             ngc
