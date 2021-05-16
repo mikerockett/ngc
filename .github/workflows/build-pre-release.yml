@@ -1,14 +1,15 @@
-name: vlang-build-pipeline
+name: build-prerelease
 
 on:
   push:
-    paths-ignore:
-      - "**.md"
-      - ".editorconfig"
+    branches:
+      - prerelease
+    paths:
+      - "**.v"
 
 jobs:
   run:
-    name: Run
+    name: Build and Release
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -26,6 +27,6 @@ jobs:
           repo_token: "${{ secrets.GITHUB_TOKEN }}"
           automatic_release_tag: "latest"
           prerelease: true
-          title: "Production Build for Linux"
+          title: "Pre-Release Build for Linux"
           files: |
             ngc
