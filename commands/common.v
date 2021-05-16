@@ -65,7 +65,7 @@ pub fn ensure_dependencies_are_installed() {
 
 pub fn ensure_dependencies_can_run() {
 	println(term.dim('ensuring dependencies can run'))
-	for command in ['nginx -version', 'certbot --version', 'dig -v'] {
+	for command in ['nginx -v', 'certbot --version', 'dig -v'] {
 		result := os.execute(command)
 		if result.exit_code != 0 {
 			eprintln(term.red('unable to run dependency: $command'))
