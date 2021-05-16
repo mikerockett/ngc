@@ -1,7 +1,6 @@
 module structures
 
 import helpers { ask, confirm, validate_fqdn }
-import net.http
 import os
 import term
 import nginx { Directive }
@@ -74,7 +73,7 @@ pub fn (mut this AddDomainFlow) check_domain_dns() {
 pub fn (mut this AddDomainFlow) check_server_dns() {
 	println(term.bright_blue('→ checking server dns…'))
 	result := os.execute('dig +short myip.opendns.com @resolver1.opendns.com')
-	if result.exit_code != {
+	if result.exit_code != 0 {
 		eprintln(term.red('unable to do a dns lookup for the server – are you connected?'))
 		exit(1)
 	}
