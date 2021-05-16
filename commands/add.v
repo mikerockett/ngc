@@ -24,6 +24,7 @@ fn add_domain(command Command) {
 	}
 	flow.configure()
 	flow.confirm()
-	// flow.create_user()
+	flow.create_user()
 	flow.create_nginx_configuration()
+	flow.complete()
 }

@@ -148,7 +148,7 @@ pub fn (mut this AddDomainFlow) create_user() {
 		eprintln(term.red('unable to create user.'))
 		exit(1)
 	}
-	println(result)
+	println(term.green('✔ user created'))
 }
 
 const (
@@ -167,7 +167,6 @@ pub fn (mut this AddDomainFlow) create_nginx_configuration() {
 	}
 	println(term.dim('- compiling'))
 	compiled := conf.compile(1)
-	println(compiled)
 	if os.is_file(filename) {
 		println(term.yellow('$filename exists, removing…'))
 		os.rm(filename) or {
@@ -297,4 +296,14 @@ pub fn (this AddDomainFlow) nginx_php_location() Directive {
 	location.instruction('fastcgi_param', 'DOCUMENT_ROOT', '\$realpath_root')
 	location.instruction('fastcgi_param', 'SCRIPT_FILENAME', '\$realpath_root\$fastcgi_script_name')
 	return location
+}
+
+pub fn (mut this AddDomainFlow) complete() {
+	result := os.execute('systemctl reload nginx')
+	if result.exit_code != 0 {
+		eprintln(term.red('unable to reload nginx – please do this yourself.'))
+		exit(1)
+	}
+	println(term.green('✔ nginx reloaded'))
+	println(term.green('all done!'))
 }
