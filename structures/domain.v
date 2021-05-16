@@ -59,7 +59,7 @@ pub fn (mut this AddDomainFlow) acquire_domain_config() {
 
 pub fn (mut this AddDomainFlow) check_domain_dns() {
 	println(term.bright_blue('→ checking domain dns…'))
-	result := os.execute('dig $this.domain.name +short')
+	result := os.execute('dig +short $this.domain.name')
 	if result.exit_code != 0 {
 		eprintln(term.red('unable to do a dns lookup for $this.domain.name – are you connected?'))
 		exit(1)
@@ -73,11 +73,12 @@ pub fn (mut this AddDomainFlow) check_domain_dns() {
 
 pub fn (mut this AddDomainFlow) check_server_dns() {
 	println(term.bright_blue('→ checking server dns…'))
-	result := http.get('https://icanhazip.com/') or {
+	result := os.execute('dig +short myip.opendns.com @resolver1.opendns.com')
+	if result.exit_code != {
 		eprintln(term.red('unable to do a dns lookup for the server – are you connected?'))
 		exit(1)
 	}
-	this.server_dns = result.text.trim_space()
+	this.server_dns = result.output.trim_space()
 }
 
 fn get_nginx_configuration_file() string {

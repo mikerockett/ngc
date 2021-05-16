@@ -16,11 +16,11 @@ pub fn add() Command {
 fn add_domain(command Command) {
 	mut flow := AddDomainFlow{}
 	flow.acquire_domain_config()
-	if !flow.domain.skip_dns {
+	if flow.domain.skip_dns {
+		println(term.yellow(term.bold('you have chosen to ignore dns-related tasks - domain verification and certbot will be skipped.')))
+	} else {
 		flow.check_domain_dns()
 		flow.check_server_dns()
-	} else {
-		println(term.yellow(term.bold('you have chosen to ignore dns-related tasks - domain verification and certbot will be skipped.')))
 	}
 	flow.configure()
 	flow.confirm()
