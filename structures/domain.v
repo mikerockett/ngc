@@ -10,6 +10,7 @@ pub:
   name string [required]
   skip_dns bool [required]
   www_server bool[required]
+  repo_directory string
   public_root string [required]
   index string [required]
   shell string [required]
@@ -39,7 +40,8 @@ pub fn (mut this AddDomainFlow) acquire_domain_config() {
   this.domain = Domain{
     name: ask(
       message: 'user and domain name'
-      required: true
+      default: if os.args.len == 3 { os.args[2] } else { '' }
+      required: os.args.len < 3
       validator: fn (input string) (bool, string) {
         return validate_fqdn(input), 'not a valid domain name'
       }
@@ -48,8 +50,17 @@ pub fn (mut this AddDomainFlow) acquire_domain_config() {
     skip_dns: confirm(message: 'skip dns and certbot?', default: false)
     www_server: confirm(message: 'add a www. server with redirect?', default: false)
 
+    repo_directory: ask(
+      message: 'repo directory (one of ${['www', 'repo', 'public_html'].join(', ')})'
+      default: 'www'
+      validator: fn (input string) (bool, string) {
+        valids := ['www', 'repo', 'public_html']
+        return input in valids, 'must be one of ${valids.join(', ')}'
+      }
+    )
+
     public_root: ask(
-      message: 'public root directory ${['public', 'dist', 'web'].join(', ')}'
+      message: 'public root directory (one of ${['public', 'dist', 'web'].join(', ')})'
       default: 'public'
       validator: fn (input string) (bool, string) {
         valids := ['public', 'dist', 'web']
@@ -113,7 +124,6 @@ fn get_nginx_configuration_file() string {
 
 pub fn (mut this AddDomainFlow) configure() {
   this.home_directory = '/home/$this.domain.name'
-
   this.nginx_configuration_file = get_nginx_configuration_file()
 
   this.nginx_server_configuration_file = os.join_path(
@@ -130,7 +140,7 @@ pub fn (mut this AddDomainFlow) configure() {
   }
 }
 
-pub fn (mut this AddDomainFlow) confirm() {
+pub fn (mut this AddDomainFlow) confirm_flow() {
   println(term.green('configurator has everything it needs to add a new domain,\nand just needs your confirmation on some other info it gathered:'))
 
   if !this.domain.skip_dns {
@@ -141,15 +151,16 @@ pub fn (mut this AddDomainFlow) confirm() {
 
     match this.skip_certbot {
       true {
-        println('✔ domain points to server, certbot will be run at the end')
+        println(term.red('⨉ domain doesn’t point to server, certbot will be skipped'))
       }
       false {
-        println(term.red('⨉ domain doesn’t point to server, certbot will be skipped'))
+        println('✔ domain points to server, certbot will be run at the end')
       }
     }
   }
 
   println('+ user home directory: ${term.dim(this.home_directory)}')
+  println('+ repo directory: ${term.dim(this.domain.repo_directory)}')
   println('+ nginx config file path: ${term.dim(this.nginx_configuration_file)}')
   println('+ nginx server config file path: ${term.dim(this.nginx_server_configuration_file)}')
   println('+ nginx log file base path: ${term.dim(this.nginx_log_file_base_path)}')
@@ -184,6 +195,22 @@ pub fn (mut this AddDomainFlow) create_user() {
   }
 
   println(term.green('✔ user created'))
+}
+
+pub fn (mut this AddDomainFlow) set_basic_permissions() {
+  chmod_command := 'chmod -R 770 $this.home_directory'
+  chmod_result := os.execute(chmod_command)
+
+  if chmod_result.exit_code != 0 {
+    eprintln(term.red('unable to run chmod, please do this yourself with: $chmod_command'))
+  }
+
+  chown_command := 'chown -R $this.domain.name:nginx'
+  chown_result := os.execute(chown_command)
+
+  if chown_result.exit_code != 0 {
+    eprintln(term.red('unable to run chown, please do this yourself with: $chown_command'))
+  }
 }
 
 const (
@@ -254,7 +281,7 @@ pub fn (this AddDomainFlow) nginx_main_server() Directive {
   server.listen('80')
   server.listen('[::]:80')
   server.server_name(this.domain.name)
-  server.root(os.join_path(this.home_directory, 'www', this.domain.public_root))
+  server.root(os.join_path(this.home_directory, this.domain.repo_directory, this.domain.public_root))
   server.index(this.domain.index)
   server.error_page('404', '/$this.domain.index')
   server.charset('utf-8')
@@ -397,14 +424,24 @@ pub fn (mut this AddDomainFlow) run_certbot() {
   }
 }
 
-pub fn (mut this AddDomainFlow) complete() {
-  result := os.execute('systemctl reload nginx')
+pub fn (mut this AddDomainFlow) test_and_reload() {
+  test_command := 'nginx -t'
+  test_result := os.execute(test_command)
 
-  if result.exit_code != 0 {
-    eprintln(term.red('unable to reload nginx – please do this yourself.'))
+  if test_result.exit_code != 0 {
+    eprintln(term.red('nginx syntax failed, please check and correct, then run: $test_command'))
+    exit(1)
+  }
+
+  println(term.green('✔ nginx syntax ok'))
+
+  reload_command := 'systemctl reload nginx'
+  reload_result := os.execute(reload_command)
+
+  if reload_result.exit_code != 0 {
+    eprintln(term.red('unable to reload nginx – please do this yourself with: $reload_command'))
     exit(1)
   }
 
   println(term.green('✔ nginx reloaded'))
-  println(term.green('all done!'))
 }

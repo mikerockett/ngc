@@ -10,6 +10,7 @@ pub fn add() Command {
     description: 'add a new user and nginx server'
     pre_execute: welcome
     execute: add_domain
+    usage: '<name>'
   }
 }
 
@@ -28,8 +29,9 @@ fn add_domain(command Command) {
   }
 
   flow.configure()
-  flow.confirm()
+  flow.confirm_flow()
   flow.create_user()
+  flow.set_basic_permissions()
   flow.create_nginx_configuration()
 
   if !flow.skip_certbot {
@@ -37,5 +39,7 @@ fn add_domain(command Command) {
     flow.run_certbot()
   }
 
-  flow.complete()
+  flow.test_and_reload()
+
+  println(term.green('done!'))
 }

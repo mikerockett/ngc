@@ -1,4 +1,4 @@
-import os { args }
+import os
 import cli { Command }
 import commands { add }
 import nginx { Directive }
@@ -12,5 +12,5 @@ fn main() {
     commands: [add()]
   }
 
-  app.parse(args)
+  app.parse(os.args)
 }

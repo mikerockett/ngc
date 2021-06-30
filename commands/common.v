@@ -7,7 +7,7 @@ import os
 pub fn welcome(command Command) {
   term.clear()
 
-  title := 'nginx configurator: $command.description'
+  title := 'nginx configurator for php apps: $command.description'
 
   println(term.bright_green('-'.repeat(title.len)))
   println(term.bright_green(title))
@@ -25,20 +25,21 @@ pub fn preflight() {
   ensure_dependencies_can_run()
 
   println(term.bright_green('preflight checks complete'))
+
+  term.cursor_up(10)
+  term.erase_display('0')
 }
 
 pub fn ensure_supported_user_os() {
   println(term.dim('ensuring os supported'))
 
   os := os.user_os()
+  supported := $if prod { ['linux'] } $else { ['linux', 'macos'] }
 
-  if os.trim_space() !in ['linux', 'macos'] { // macos is temporary
+  if os.trim_space() !in supported {
     eprintln(term.red('$os is not supported'))
     exit(1)
   }
-
-  term.cursor_up(1)
-  term.erase_line_clear()
 
   println(term.bright_green('os supported'))
 }
@@ -53,13 +54,12 @@ pub fn ensure_running_as_root() {
     exit(1)
   }
 
-  if result.output.trim_space() !in ['0', '501'] { // 501 is temporary
+  supported := $if prod { ['0'] } $else { ['0', '501'] }
+
+  if result.output.trim_space() !in supported {
     eprintln(term.red('⨉ must be running as root, quitting'))
     exit(1)
   }
-
-  term.cursor_up(1)
-  term.erase_line_clear()
 
   println(term.bright_green('running as root'))
 }
@@ -74,9 +74,6 @@ pub fn ensure_dependencies_are_installed() {
     }
   }
 
-  term.cursor_up(1)
-  term.erase_line_clear()
-
   println(term.bright_green('dependencies are installed'))
 }
 
@@ -90,9 +87,6 @@ pub fn ensure_dependencies_can_run() {
       exit(1)
     }
   }
-
-  term.cursor_up(1)
-  term.erase_line_clear()
 
   println(term.bright_green('dependencies can run'))
 }

@@ -14,8 +14,8 @@ pub fn confirm(prompt ConfirmationPrompt) bool {
   input := os.input(
     term.yellow('? ')
       + prompt.message
-      + term.bright_green(' [y/n] ')
-      + term.dim('$default_str ')
+      + term.bright_green(' (y/n) ')
+      + term.dim('[$default_str] ')
     ).trim_space()
      .to_lower()
 
