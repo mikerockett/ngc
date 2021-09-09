@@ -25,9 +25,6 @@ pub fn preflight() {
   ensure_dependencies_can_run()
 
   println(term.bright_green('preflight checks complete'))
-
-  term.cursor_up(10)
-  term.erase_display('0')
 }
 
 pub fn ensure_supported_user_os() {
@@ -49,7 +46,7 @@ pub fn ensure_running_as_root() {
 
   result := os.execute('id -u')
 
-  if result.exit_code != 0{
+  if result.exit_code != 0 {
     eprintln(term.red('unable to get user id'))
     exit(1)
   }
