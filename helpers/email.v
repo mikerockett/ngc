@@ -1,7 +1,7 @@
 module helpers
 
 const (
-  email_re = r'^(?:[-a-zA-Z0-9!#$%&.\'*+/=?^_`{|}~]+)|("(?:[-a-zA-Z0-9!#$%&.\'*+/=?^_`{|}~]+)")$'
+  email_re = "^(?:[-a-zA-Z0-9!#$%&.'*+/=?^_`{|}~]+)|(\"(?:[-a-zA-Z0-9!#$%&.'*+/=?^_`{|}~]+)\")$"
 )
 
 pub fn validate_email(address string) bool {
