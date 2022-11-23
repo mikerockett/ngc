@@ -28,7 +28,7 @@ pub fn preflight() {
 }
 
 pub fn ensure_supported_user_os() {
-  println(term.dim('ensuring os supported'))
+  print(term.dim('ensuring os supported '))
 
   os := os.user_os()
   supported := $if prod { ['linux'] } $else { ['linux', 'macos'] }
@@ -38,11 +38,11 @@ pub fn ensure_supported_user_os() {
     exit(1)
   }
 
-  println(term.bright_green('os supported'))
+  println(term.bright_green('ok'))
 }
 
 pub fn ensure_running_as_root() {
-  println(term.dim('ensuring running as root'))
+  print(term.dim('ensuring running as root '))
 
   result := os.execute('id -u')
 
@@ -58,11 +58,11 @@ pub fn ensure_running_as_root() {
     exit(1)
   }
 
-  println(term.bright_green('running as root'))
+  println(term.bright_green('ok'))
 }
 
 pub fn ensure_dependencies_are_installed() {
-  println(term.dim('ensuring dependencies are installed'))
+  print(term.dim('ensuring dependencies are installed '))
 
   for dependency in ['certbot', 'nginx', 'dig'] {
     if !os.exists_in_system_path(dependency) {
@@ -71,11 +71,11 @@ pub fn ensure_dependencies_are_installed() {
     }
   }
 
-  println(term.bright_green('dependencies are installed'))
+  println(term.bright_green('ok'))
 }
 
 pub fn ensure_dependencies_can_run() {
-  println(term.dim('ensuring dependencies can run'))
+  print(term.dim('ensuring dependencies can run '))
 
   for command in ['nginx -v', 'certbot --version', 'dig -v'] {
     result := os.execute(command)
@@ -85,7 +85,7 @@ pub fn ensure_dependencies_can_run() {
     }
   }
 
-  println(term.bright_green('dependencies can run'))
+  println(term.bright_green('ok'))
 }
 
 pub fn yes_no(condition bool) string {

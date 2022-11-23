@@ -226,12 +226,16 @@ const (
   ]
 )
 
-pub fn (mut this AddDomainFlow) create_log_directory() {
+pub fn (mut this AddDomainFlow) create_nginx_log_directory() {
+  println(term.dim('- creating nginx log directory'))
+
   os.mkdir_all(this.nginx_log_file_base_path) or {
     eprintln(term.red('unable to create log directory'))
     eprintln(err)
     exit(1)
   }
+
+  println(term.green('✔ nginx log directory created'))
 }
 
 pub fn (mut this AddDomainFlow) create_nginx_configuration() {

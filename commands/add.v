@@ -32,7 +32,7 @@ fn add_domain(command Command)! {
   flow.confirm_flow()
   flow.create_user()
   flow.set_basic_permissions()
-  flow.create_log_directory()
+  flow.create_nginx_log_directory()
   flow.create_nginx_configuration()
 
   if !flow.skip_certbot {
