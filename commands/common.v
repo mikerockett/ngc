@@ -4,7 +4,7 @@ import cli { Command }
 import term
 import os
 
-pub fn welcome(command Command) {
+pub fn welcome(command Command)! {
   term.clear()
 
   title := 'nginx configurator for php apps: $command.description'
